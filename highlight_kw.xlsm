@@ -1,0 +1,49 @@
+Sub HighlightKeywords()
+    Dim cell As Range
+    Dim keyword As String
+    Dim startPos As Integer
+    Dim keywordLength As Integer
+
+    keyword = "TừKhoáCủaBạn"  
+    keywordLength = Len(keyword)
+
+    For Each cell In Selection
+        If cell.HasFormula = False Then
+            startPos = InStr(1, cell.Value2, keyword, vbTextCompare)
+            Do While startPos > 0
+                With cell.Characters(startPos, keywordLength).Font
+                    .Bold = True
+                    .Color = RGB(255, 0, 0)  ' Làm nổi bật bằng màu đỏ
+                End With
+                startPos = InStr(startPos + keywordLength, cell.Value2, keyword, vbTextCompare)
+            Loop
+        End If
+    Next cell
+End Sub
+
+
+---------------------------------
+Sub HighlightMultipleKeywords()
+    Dim cell As Range
+    Dim keyword As Variant
+    Dim keywords As Variant
+    Dim startPos As Integer
+    Dim keywordLength As Integer
+
+    keywords = Array("TừKhoá1", "TừKhoá2", "TừKhoá3")  
+    For Each cell In Selection
+        If cell.HasFormula = False Then 
+            For Each keyword In keywords
+                keywordLength = Len(keyword)
+                startPos = InStr(1, cell.Value, keyword, vbTextCompare)
+                Do While startPos > 0
+                    With cell.Characters(startPos, keywordLength).Font
+                        .Bold = True
+                        .Color = RGB(255, 0, 0) 
+                    End With
+                    startPos = InStr(startPos + keywordLength, cell.Value, keyword, vbTextCompare)
+                Loop
+            Next keyword
+        End If
+    Next cell
+End Sub
