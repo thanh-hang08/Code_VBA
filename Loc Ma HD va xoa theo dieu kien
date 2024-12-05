@@ -1,0 +1,67 @@
+Sub FilterContracts()
+    Dim ws As Worksheet
+    Dim lastRow As Long
+    Dim dict As Object
+    Dim i As Long
+    Dim outputRow As Long
+    Dim pgd As String
+    Dim contractCount As Long
+    Dim filteredRow As Long
+    Dim uniqueContracts As Object
+
+    
+    Set ws = ThisWorkbook.Sheets("DuLieuTheoTemplate")
+    lastRow = ws.Cells(ws.Rows.Count, 1).End(xlUp).Row
+
+    
+    Set dict = CreateObject("Scripting.Dictionary")
+    
+   
+    Set uniqueContracts = CreateObject("Scripting.Dictionary")
+    
+    
+    For i = 2 To lastRow
+        pgd = ws.Cells(i, 5).Value
+        If Not dict.exists(pgd) Then
+            dict.Add pgd, 1
+        Else
+            dict(pgd) = dict(pgd) + 1
+        End If
+    Next i
+
+    
+    ws.Columns("R:S").Clear
+    ws.Cells(1, 18).Value = "Tên PGD"
+    ws.Cells(1, 19).Value = "Mã HD"
+    outputRow = 2
+    
+    
+    For i = 2 To lastRow
+        pgd = ws.Cells(i, 5).Value
+        contractCount = dict(pgd)
+        
+        
+        If contractCount < 3 Then
+            
+            ws.Cells(outputRow, 18).Value = ws.Cells(i, 5).Value
+            ws.Cells(outputRow, 19).Value = ws.Cells(i, 10).Value
+            outputRow = outputRow + 1
+        Else
+            
+            If Not uniqueContracts.exists(pgd) Then
+                uniqueContracts.Add pgd, 1
+                ws.Cells(outputRow, 18).Value = ws.Cells(i, 5).Value
+                ws.Cells(outputRow, 19).Value = ws.Cells(i, 10).Value
+                outputRow = outputRow + 1
+            ElseIf uniqueContracts(pgd) < 2 Then
+                uniqueContracts(pgd) = uniqueContracts(pgd) + 1
+                ws.Cells(outputRow, 18).Value = ws.Cells(i, 5).Value
+                ws.Cells(outputRow, 19).Value = ws.Cells(i, 10).Value
+                outputRow = outputRow + 1
+            End If
+        End If
+    Next i
+    
+    MsgBox "Data da duoc loc va xuat sang cot R,S!", vbInformation
+End Sub
+
