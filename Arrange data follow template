@@ -1,0 +1,32 @@
+Sub SapXepDuLieuTheoTemplate()
+    Dim wsGoc As Worksheet, wsMoi As Worksheet
+    Dim templateOrder As Variant
+    Dim i As Integer, lastRow As Long
+    
+    Set wsGoc = ThisWorkbook.Sheets("file zip 123")
+    Set wsMoi = ThisWorkbook.Sheets.Add
+    wsMoi.Name = "DuLieuTheoTemplate1"
+    
+   
+    templateOrder = Array("STT", "CREATED_DATE", "QLV", "QLKV", "SHOP_NAME", "TPGD_ORGCHART", "TPGD_APPROVE", "IS_CROSS_CHECK", "CREATED_USER", "LOAN_CODE", "CUSTOMER_NAME", "PACKAGE_NAME", "PAYMENT_TYPE", "CUSTOMER_TYPE", "CUSTOMER_NAME_FLAG", "IS_ECONTRACT", "MUST_HAVE_Headline")
+    
+    
+    For i = LBound(templateOrder) To UBound(templateOrder)
+        Dim colIndex As Integer
+        colIndex = Application.Match(templateOrder(i), wsGoc.Rows(1), 0)
+        
+        If Not IsError(colIndex) Then
+            
+            wsGoc.Columns(colIndex).Copy Destination:=wsMoi.Columns(i + 1)
+        Else
+            MsgBox "Khong tim thay truong: " & templateOrder(i), vbExclamation, "Loi"
+        End If
+    Next i
+    
+    
+    For i = LBound(templateOrder) To UBound(templateOrder)
+        wsMoi.Cells(1, i + 1).Value = templateOrder(i)
+    Next i
+    
+    MsgBox "Du lieu da duoc sap xep theo template!", vbInformation
+End Sub
