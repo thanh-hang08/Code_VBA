@@ -3,7 +3,7 @@ Sub SapXepDuLieuTheoTemplate()
     Dim templateOrder As Variant
     Dim i As Integer, lastRow As Long
     
-    Set wsGoc = ThisWorkbook.Sheets("file zip 123")
+    Set wsGoc = ThisWorkbook.Sheets("file zip 123") 'thay tên sheet nha
     Set wsMoi = ThisWorkbook.Sheets.Add
     wsMoi.Name = "DuLieuTheoTemplate1"
     
