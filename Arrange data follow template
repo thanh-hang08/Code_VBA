@@ -1,3 +1,7 @@
+B1 xoá cột KHCN
+B2 Thay tên coloumn = STT
+
+
 Sub SapXepDuLieuTheoTemplate()
     Dim wsGoc As Worksheet, wsMoi As Worksheet
     Dim templateOrder As Variant
