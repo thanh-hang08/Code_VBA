@@ -1,5 +1,6 @@
-B1 xoá cột KHCN
-B2 Thay tên coloumn = STT
+B1 Lọc theo dkien trc (TLS, duyệt chéo,...) 
+B2 xoá cột KHCN
+B3 Thay tên coloumn = STT
 
 
 Sub SapXepDuLieuTheoTemplate()
