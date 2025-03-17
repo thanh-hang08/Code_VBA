@@ -1,81 +1,56 @@
-Sub FilterContractsByRegion()
+Sub FilterContracts()
     Dim ws As Worksheet
     Dim lastRow As Long
-    Dim regionDict As Object
+    Dim dict As Object
     Dim i As Long
     Dim outputRow As Long
-    Dim qlv As Variant ' Sửa thành Variant để dùng trong For Each
-    Dim shopName As String
-    Dim loanCode As String
-    Dim category As String
-    Dim contracts As Object
+    Dim pgd As String
+    Dim contractCount As Long
+    Dim uniqueContracts As Object
 
-    ' Xác định sheet làm việc
-    Set ws = ThisWorkbook.Sheets("DuLieuTheoTemplate")
+    ' Lấy sheet dữ liệu
+    Set ws = ThisWorkbook.Sheets("raw-0615 03")
     lastRow = ws.Cells(ws.Rows.Count, 1).End(xlUp).Row
 
-    ' Tạo Dictionary để theo dõi hợp đồng theo từng vùng (QLV)
-    Set contracts = CreateObject("Scripting.Dictionary")
+    ' Khởi tạo Dictionary
+    Set dict = CreateObject("Scripting.Dictionary")
+    Set uniqueContracts = CreateObject("Scripting.Dictionary")
 
-    ' Xóa dữ liệu cũ trên cột R, S
+    ' Đếm số lượng hợp đồng theo từng phòng giao dịch (PGD)
+    For i = 2 To lastRow
+        pgd = ws.Cells(i, 4).Value ' Cột SHOP_NAME (PGD)
+        If Not dict.exists(pgd) Then
+            dict.Add pgd, 1
+        Else
+            dict(pgd) = dict(pgd) + 1
+        End If
+    Next i
+
+    ' Xóa dữ liệu cũ trên cột R:S
     ws.Columns("R:S").Clear
     ws.Cells(1, 18).Value = "Tên PGD"
     ws.Cells(1, 19).Value = "Mã HD"
     outputRow = 2
 
-    ' Lưu hợp đồng vào Dictionary theo từng vùng để xử lý sau
+    ' Lọc dữ liệu theo điều kiện
     For i = 2 To lastRow
-        qlv = Trim(ws.Cells(i, 3).Value) ' Cột C - Quản lý vùng (QLV)
-        shopName = Trim(ws.Cells(i, 5).Value) ' Cột E - Tên PGD
-        loanCode = Trim(ws.Cells(i, 10).Value) ' Cột J - Mã hợp đồng
-        category = Trim(ws.Cells(i, 15).Value) ' Cột O - Phân loại hợp đồng (KHM)
+        pgd = ws.Cells(i, 4).Value
+        contractCount = dict(pgd)
 
-        ' Nếu vùng chưa tồn tại trong Dictionary thì tạo danh sách mới
-        If Not contracts.exists(qlv) Then
-            contracts.Add qlv, CreateObject("System.Collections.ArrayList")
-        End If
-        
-        ' Lưu hợp đồng vào danh sách của vùng
-        contracts(qlv).Add Array(shopName, loanCode, category)
-    Next i
-
-    ' Lọc hợp đồng theo vùng (ưu tiên KHM trước)
-    Dim contractList As Object
-    Dim contractItem As Variant
-    Dim count As Integer
-    
-    For Each qlv In contracts.keys
-        ' Lấy danh sách hợp đồng của vùng hiện tại
-        Set contractList = contracts(qlv)
-        
-        ' Sắp xếp danh sách: ưu tiên hợp đồng có category là "KHM"
-        contractList.Sort Function(x, y)
-
-        ' Reset bộ đếm hợp đồng của vùng
-        count = 0
-
-        ' Duyệt qua danh sách hợp đồng để lưu vào kết quả
-        For Each contractItem In contractList
-            If count >= 120 Then Exit For ' Giữ tối đa 100 hợp đồng cho mỗi vùng
-            
-            ' Xuất hợp đồng ra cột R, S
-            ws.Cells(outputRow, 18).Value = contractItem(0) ' SHOP_NAME
-            ws.Cells(outputRow, 19).Value = contractItem(1) ' Mã hợp đồng
+        ' Nếu PGD có ≤ 9 hợp đồng, giữ lại 1 hợp đồng
+        ' Nếu PGD có > 9 hợp đồng, giữ lại 2 hợp đồng
+        If Not uniqueContracts.exists(pgd) Then
+            uniqueContracts.Add pgd, 1
+            ws.Cells(outputRow, 18).Value = ws.Cells(i, 4).Value
+            ws.Cells(outputRow, 19).Value = ws.Cells(i, 9).Value
             outputRow = outputRow + 1
-            count = count + 1
-        Next contractItem
-    Next qlv
+        ElseIf (contractCount > 9 And uniqueContracts(pgd) < 2) Then
+            uniqueContracts(pgd) = uniqueContracts(pgd) + 1
+            ws.Cells(outputRow, 18).Value = ws.Cells(i, 4).Value
+            ws.Cells(outputRow, 19).Value = ws.Cells(i, 9).Value
+            outputRow = outputRow + 1
+        End If
+    Next i
 
     MsgBox "Dữ liệu đã được lọc và xuất ra cột R, S!", vbInformation
 End Sub
-
-' Hàm sắp xếp: Ưu tiên hợp đồng KHM
-Function CompareKHM(x, y)
-    If x(2) = "KHM" And y(2) <> "KHM" Then
-        CompareKHM = -1 ' Xếp x lên trước
-    ElseIf x(2) <> "KHM" And y(2) = "KHM" Then
-        CompareKHM = 1 ' Xếp y lên trước
-    Else
-        CompareKHM = 0 ' Giữ nguyên thứ tự
-    End If
-End Function
