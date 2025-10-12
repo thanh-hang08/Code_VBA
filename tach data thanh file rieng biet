@@ -1,0 +1,42 @@
+Sub SplitDataByRegion()
+    Dim ws As Worksheet, wsTemp As Worksheet
+    Dim regionCol As Long, lastRow As Long
+    Dim cell As Range, regionName As String
+    Dim dict As Object, key As Variant
+    
+    Set ws = ThisWorkbook.Sheets("Data") 'Tên sheet gốc
+    Set dict = CreateObject("Scripting.Dictionary")
+    
+    'Xác định cột vùng (giả sử cột A)
+    regionCol = 1
+    lastRow = ws.Cells(ws.Rows.Count, regionCol).End(xlUp).Row
+    
+    'Lấy danh sách vùng
+    For Each cell In ws.Range("A2:A" & lastRow)
+        If Not dict.exists(cell.Value) Then dict.Add cell.Value, Nothing
+    Next cell
+    
+    'Tạo file cho từng vùng
+    For Each key In dict.keys
+        ws.Copy
+        Set wsTemp = ActiveSheet
+        wsTemp.Name = key
+        
+        'Lọc theo vùng
+        With wsTemp.Range("A1").CurrentRegion
+            .AutoFilter Field:=regionCol, Criteria1:=key
+            .Copy
+        End With
+        
+        'Tạo file mới
+        Dim newWb As Workbook
+        Set newWb = Workbooks.Add
+        newWb.Sheets(1).Range("A1").PasteSpecial xlPasteAll
+        newWb.SaveAs ThisWorkbook.Path & "\" & key & ".xlsx"
+        newWb.Close False
+        wsTemp.ShowAllData
+        wsTemp.Delete
+    Next key
+    
+    MsgBox "Đã tách xong " & dict.Count & " file!"
+End Sub
