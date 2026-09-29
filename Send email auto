@@ -1,0 +1,174 @@
+Sub TestEmail()
+    Call XuLyEmail(True)
+End Sub
+
+Sub GuiEmailHangLoat()
+    Dim xn As VbMsgBoxResult
+    xn = MsgBox("Ban co chac muon gui email cho TAT CA?", vbYesNo + vbExclamation, "Xac nhan")
+    If xn = vbYes Then Call XuLyEmail(False)
+End Sub
+
+Sub TrichXuatLink()
+    Dim ws As Worksheet
+    Dim i As Long, lastRow As Long
+    Dim rawLink As String, fullLink As String
+    Dim BASE_URL As String
+    BASE_URL = "https://f88vn-my.sharepoint.com"
+    Set ws = ActiveSheet
+    lastRow = ws.Cells(ws.Rows.Count, 5).End(xlUp).Row
+    ws.Cells(1, 7).Value = "URL goc"
+    For i = 2 To lastRow
+        If ws.Cells(i, 5).Hyperlinks.Count > 0 Then
+            rawLink = ws.Cells(i, 5).Hyperlinks(1).Address
+            Do While Left(rawLink, 3) = "../"
+                rawLink = Mid(rawLink, 4)
+            Loop
+            If Left(rawLink, 4) <> "http" Then
+                fullLink = BASE_URL & "/" & rawLink
+            Else
+                fullLink = rawLink
+            End If
+            ws.Cells(i, 7).Value = fullLink
+        Else
+            ws.Cells(i, 7).Value = ws.Cells(i, 5).Value
+        End If
+    Next i
+    MsgBox "Da trich xuat " & (lastRow - 1) & " link ra cot G!", vbInformation
+End Sub
+
+Private Sub XuLyEmail(TestMode As Boolean)
+    Dim OutApp As Object, OutMail As Object
+    Dim ws As Worksheet
+    Dim i As Long, lastRow As Long, soGui As Long, soLoi As Long
+    Dim tenQLKV As String, khuVuc As String
+    Dim emailTo As String, tieuDe As String, linkFile As String
+    Dim EmailCC As String
+    
+    EmailCC = "ngocntm3@f88.vn"
+    
+    Set ws = ActiveSheet
+    lastRow = ws.Cells(ws.Rows.Count, 3).End(xlUp).Row
+    
+    If lastRow < 2 Then
+        MsgBox "Khong tim thay du lieu!", vbExclamation
+        Exit Sub
+    End If
+    
+    On Error Resume Next
+    Set OutApp = GetObject(, "Outlook.Application")
+    If OutApp Is Nothing Then Set OutApp = CreateObject("Outlook.Application")
+    On Error GoTo 0
+    
+    If OutApp Is Nothing Then
+        MsgBox "Khong the mo Outlook!", vbCritical
+        Exit Sub
+    End If
+    
+    soGui = 0: soLoi = 0
+    
+    For i = 2 To lastRow
+        tenQLKV = Trim(CStr(ws.Cells(i, 1).Value))
+        khuVuc = Trim(CStr(ws.Cells(i, 2).Value))
+        emailTo = Trim(CStr(ws.Cells(i, 3).Value))
+        tieuDe = Trim(CStr(ws.Cells(i, 4).Value))
+        
+        If ws.Cells(i, 5).Hyperlinks.Count > 0 Then
+            linkFile = ws.Cells(i, 5).Hyperlinks(1).Address
+            Do While Left(linkFile, 3) = "../"
+                linkFile = Mid(linkFile, 4)
+            Loop
+            If Left(linkFile, 4) <> "http" Then
+                linkFile = "https://f88vn-my.sharepoint.com/" & linkFile
+            End If
+        Else
+            linkFile = Trim(CStr(ws.Cells(i, 5).Value))
+        End If
+        
+        If emailTo = "" Or tenQLKV = "" Then GoTo NextRow
+        
+        On Error Resume Next
+        Set OutMail = OutApp.CreateItem(0)
+        
+        With OutMail
+            .To = emailTo
+            If EmailCC <> "" Then .CC = EmailCC
+            .Subject = tieuDe
+            .HTMLBody = TaoHTML(tenQLKV, khuVuc, linkFile)
+            
+            If TestMode Then
+                .Display
+                MsgBox "Email mau cho: " & tenQLKV & vbCrLf & "Email: " & emailTo, vbInformation
+                Set OutMail = Nothing: Set OutApp = Nothing
+                Exit Sub
+            Else
+                .Send
+                soGui = soGui + 1
+            End If
+        End With
+        
+        If Err.Number <> 0 Then
+            soLoi = soLoi + 1
+            ws.Cells(i, 6).Value = "LOI: " & Err.Description
+            Err.Clear
+        Else
+            ws.Cells(i, 6).Value = "Da gui"
+        End If
+        On Error GoTo 0
+        
+        Set OutMail = Nothing
+        Application.Wait Now + TimeValue("00:00:01")
+        Application.StatusBar = "Dang gui... " & soGui & "/" & (lastRow - 1)
+NextRow:
+    Next i
+    
+    Application.StatusBar = False
+    MsgBox "HOAN TAT!" & vbCrLf & "Da gui: " & soGui & vbCrLf & "Loi: " & soLoi, vbInformation
+    Set OutApp = Nothing
+End Sub
+
+Private Function TaoHTML(ten As String, kv As String, link As String) As String
+    Dim h As String
+    h = "<html><head><meta charset='utf-8'></head><body>"
+    h = h & "<div style='font-family:Segoe UI,Arial,sans-serif;max-width:600px;margin:0 auto;'>"
+    h = h & "<div style='background:linear-gradient(135deg,#1e3a5f,#2d5f8a);padding:20px 25px;border-radius:8px 8px 0 0;'>"
+    h = h & "<h2 style='color:#fff;margin:0;font-size:18px;'>"
+    h = h & "Th" & ChrW(244) & "ng b" & ChrW(225) & "o ch" & ChrW(7913) & "ng t" & ChrW(7915) & " l" & ChrW(7895) & "i"
+    h = h & "</h2></div>"
+    h = h & "<div style='background:#fff;padding:25px;border:1px solid #e0e0e0;'>"
+    h = h & "<p style='font-size:14px;color:#333;'>"
+    h = h & "K" & ChrW(237) & "nh g" & ChrW(7917) & "i anh/ch" & ChrW(7883)
+    h = h & " QLKV <b>" & ten & "</b>,</p>"
+    h = h & "<p style='font-size:14px;color:#333;line-height:1.6;'>"
+    h = h & "Ph" & ChrW(242) & "ng V" & ChrW(7853) & "n h" & ChrW(224) & "nh"
+    h = h & " g" & ChrW(7917) & "i anh/ch" & ChrW(7883)
+    h = h & " danh s" & ChrW(225) & "ch ch" & ChrW(7913) & "ng t" & ChrW(7915)
+    h = h & " l" & ChrW(7895) & "i ph" & ChrW(225) & "t sinh t" & ChrW(7841) & "i"
+    h = h & " <b>" & kv & "</b>.</p>"
+    h = h & "<div style='background:#f0f7ff;border-left:4px solid #2d5f8a;padding:12px 16px;margin:16px 0;'>"
+    h = h & "<p style='margin:0;font-size:14px;color:#333;'>"
+    h = h & "Anh/ch" & ChrW(7883) & " vui l" & ChrW(242) & "ng ki" & ChrW(7875) & "m tra"
+    h = h & ", v" & ChrW(224) & " ph" & ChrW(7843) & "n h" & ChrW(7891) & "i l" & ChrW(7895) & "i"
+    h = h & " t" & ChrW(7841) & "i c" & ChrW(7897) & "t"
+    h = h & " <b>QLKV x" & ChrW(225) & "c nh" & ChrW(7853) & "n (c" & ChrW(7897) & "t AG)</b>.</p></div>"
+    h = h & "<div style='text-align:center;margin:24px 0;'>"
+    h = h & "<a href='" & link & "' style='background:#2d5f8a;color:#fff;padding:14px 28px;"
+    h = h & "text-decoration:none;border-radius:6px;font-size:14px;font-weight:bold;'>"
+    h = h & "&#128194; M" & ChrW(7903) & " file ph" & ChrW(7843) & "n h" & ChrW(7891) & "i</a></div>"
+    h = h & "<p style='font-size:14px;color:#333;line-height:1.6;'>"
+    h = h & "Anh/ch" & ChrW(7883) & " vui l" & ChrW(242) & "ng ph" & ChrW(7843) & "n h" & ChrW(7891) & "i"
+    h = h & " tr" & ChrW(432) & ChrW(7899) & "c ng" & ChrW(224) & "y"
+    h = h & " <b style='color:#c0392b;'>02/10/2026</b>.</p>"
+    h = h & "<p style='font-size:14px;color:#333;line-height:1.6;'>"
+    h = h & "M" & ChrW(7885) & "i th" & ChrW(7855) & "c m" & ChrW(7855) & "c"
+    h = h & ", anh/ch" & ChrW(7883) & " li" & ChrW(234) & "n h" & ChrW(7879)
+    h = h & " " & ChrW(273) & ChrW(7847) & "u m" & ChrW(7889) & "i"
+    h = h & " <b>" & ChrW(272) & ChrW(7895) & " Th" & ChrW(7883) & " Thanh H" & ChrW(7857) & "ng VH</b>"
+    h = h & ", <b>Nguy" & ChrW(7877) & "n Th" & ChrW(7883) & " Minh Ng" & ChrW(7885) & "c VH</b>"
+    h = h & " " & ChrW(273) & ChrW(7875) & " " & ChrW(273) & ChrW(432) & ChrW(7907) & "c"
+    h = h & " h" & ChrW(7895) & " tr" & ChrW(7907) & ".</p>"
+    h = h & "<p style='font-size:14px;color:#333;'>"
+    h = h & "Tr" & ChrW(226) & "n tr" & ChrW(7885) & "ng,<br/>"
+    h = h & "<b>Ph" & ChrW(242) & "ng V" & ChrW(7853) & "n h" & ChrW(224) & "nh</b></p>"
+    h = h & "</div></div></body></html>"
+    TaoHTML = h
+End Function
